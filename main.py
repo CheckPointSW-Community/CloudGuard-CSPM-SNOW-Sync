@@ -35,9 +35,11 @@ snowAdmPwd = "admin
 GetsnowInstance = "ven00000"
 
 
+
 def chkpfindings(apiKey, apiSecret):
   ###########################
   ####    Get Findings    ###
+  ####   from CSPM Chkp   ###
   ###########################
   searchurl = "https://api.dome9.com/v2/Compliance/Finding/search";
   headers = {
@@ -110,34 +112,55 @@ def resolveIncident(snowIncident, snowUser, snowPasswd):
         print('Status:', resp.status_code, 'Headers:', resp.headers, 'Error Response:',resp.json())
         return 1 ;
     return 0 ;
-    
+  
 
-def newSnowRun(snowInstance, snowUser, snowPasswd, chkpId):   
-    searchstr = urlencode({'sysparm_limit': 1, 'active': True })
+def fetchD9SNOWIncd(snowInstance, snowUser, snowPasswd, chkpId):   
+    searchstr = urlencode({'sysparm_limit': 1})
     murl = "https://"+snowInstance+".service-now.com/api/now/table/x_chpst_dome9_compliance_incident?alert_id="+chkpId+"&"+searchstr
     headers = {
         "accept": "application/json;charset=utf-8",
         "Content-Type": "application/json",
     }
     resp = requests.get(murl, auth=(snowUser, snowPasswd), headers=headers)
-    for kincid, vincid in resp.json().items():
-        myincid=vincid[0]['incident']['link']
-        print(myincid);
-        return(myincid);
+    if len(resp.json()) != 0:
+       for kincid, vincid in resp.json().items():
+           if len(vincid) != 0:
+             myincid=vincid[0]['incident']['link']
+             return(myincid);
+
 # Check for HTTP codes other than 200
     if resp.status_code != 200: 
         print("ERROR:");
         print('Status:', resp.status_code, 'Headers:', resp.headers, 'Error Response:',resp.json())
         exit()
     
+
+def fetchSNOWIncdAct(snowUser, snowPasswd, incdLink):   
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    resp = requests.get(incdLink, auth=(snowUser, snowPasswd), headers=headers)
+    for kincid, vincid in resp.json().items():
+        if(vincid['active']=="true"):
+                ### then update active record to closed else skip
+                myincid=vincid[0]['incident']['link']
+                print(myincid);
+                resolveIncident(myincid, snowAdmin, snowAdmPwd);
+# Check for HTTP codes other than 200
+    if resp.status_code != 200: 
+        print("ERROR:");
+        print('Status:', resp.status_code, 'Headers:', resp.headers, 'Error Response:',resp.json())
+        exit()
+
+ 
 try:
     openfindings = json.loads(chkpfindings(chkpapikey,chkpapisecret));
     for finding in openfindings:
         thisfinding = json.loads(finding);
-        for key, value in thisfinding.items():
-            if key=="findingKey":
-                getSnow = newSnowRun( GetsnowInstance, snowAdmin, snowAdmPwd, value );
-                resolveIncident(getSnow, snowAdmin, snowAdmPwd);
+        SNOWincidLnk = fetchD9SNOWIncd( GetsnowInstance, snowAdmin, snowAdmPwd, thisfinding['findingKey']);
+        if SNOWincidLnk:
+            fetchSNOWIncdAct(snowAdmin, snowAdmPwd, SNOWincidLnk);
+        SNOWincidLnk=NULL
 except Exception as e:
     print("Error.", str(e))
-#    return 0;
