@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from asyncio.windows_events import NULL
 from sre_constants import ANY
 from time import strftime
 from urllib.parse import urlencode
@@ -16,24 +17,23 @@ import json
 from requests.auth import HTTPBasicAuth
 
 # Chkp API key
-chkpapikey = "oooooooo-oooo-oooo-oooo-oooooooooooo"
+chkpapikey = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 # Chkp API secret
-chkpapisecret = "000000000000000000000000"
+chkpapisecret = "zzzzzzzzzzzzzzzzzzzzzzzz"
 
 #SNOW API UserKey
-GetsnowUser = "xoxoxoxoxoxoxoxoxoxoxoxoxoxoxoxo"
+GetsnowUser = "00000000000000000000000000000000"
 #SNOW API PWD
-GetsnowPasswd = "0000000000"
+GetsnowPasswd = "@@@@@@@@@@"
 
 #SNOW LOGIN User
 snowAdmin = "admin"
 #SNOW LOGIN PWD
-snowAdmPwd = "admin
+snowAdmPwd = "************"
 
 #SNOW Instance
-GetsnowInstance = "ven00000"
-
+GetsnowInstance = "xxxxxxxx"
 
 
 def chkpfindings(apiKey, apiSecret):
