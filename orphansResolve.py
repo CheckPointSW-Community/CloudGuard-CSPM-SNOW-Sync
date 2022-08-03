@@ -34,7 +34,6 @@ GetsnowInstance = "vvvvvvvv"
 #Get RulesetID
 RulesetID="-11"
 
-
 def chkpfindings(apiKey, apiSecret):
   ###########################
   ####    Get Findings    ###
@@ -86,8 +85,8 @@ def chkpfindings(apiKey, apiSecret):
 
 def fetchD9SNOWIncd(snowInstance, snowUser, snowPasswd): 
     myincid=[]
-    searchstr = urlencode({'sysparm_limit': 1})
-    murl = "https://"+snowInstance+".service-now.com/api/now/table/x_chpst_dome9_compliance_incident?"
+    searchstr = urlencode({'sysparm_limit': 1 })
+    murl = "https://"+snowInstance+".service-now.com/api/now/table/x_chpst_dome9_compliance_incident?"+searchstr
     headers = {
         "accept": "application/json;charset=utf-8",
         "Content-Type": "application/json",
@@ -120,10 +119,10 @@ def fetchSNOWIncdAct(snowIncident, snowInstance, snowUser, snowPasswd):
     resp = requests.get(urlIncd, auth=(snowUser, snowPasswd), headers=headers)
     
     for kincid, vincid in resp.json().items():
-        if(vincid['state']=="1" or vincid['state']=="2" or vincid['state']=="3"):
+        if(vincid['state'] != "6" and vincid['state'] != "7"):
                 ### then update active record to closed else skip
                 #myincid.append(vincid[0]['incident']['link'])
-                resolveIncident(vincid[0]['incident']['link'], snowUser, snowPasswd);
+                resolveIncident(urlIncd, snowUser, snowPasswd);
 # Check for HTTP codes other than 200
     if resp.status_code != 200: 
         print("ERROR:");
@@ -144,6 +143,7 @@ def resolveIncident(snowIncident, snowUser, snowPasswd):
     nowtime=nowDatecalc.strftime("%Y-%m-%dT%H:%M:%S.%fZ");
     recdata='{"state":"6", "category":"application","closed_at": "'+nowtime+'","close_code":"Solved (Permanently)","subcategory":"Settings/Preferences","close_notes":"Automatically closed via integration as compliance incident was detected as resolved","caused_by":"Configured/Reconfigured","problem_id":"No"}'
     resp = requests.patch(snowIncident, auth=(snowUser, snowPasswd), headers=headers, data=recdata)
+    print(snowIncident);
     if resp.status_code != 200: 
         print("ERROR:");
         print('Status:', resp.status_code, 'Headers:', resp.headers, 'Error Response:',resp.json())
@@ -169,7 +169,6 @@ try:
 #    print(tbd)
     for finding in tbd:
         fetchSNOWIncdAct(finding, GetsnowInstance, snowAdmin, snowAdmPwd)
-        print(finding)
     exit()
 
 except Exception as e:
