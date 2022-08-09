@@ -18,11 +18,6 @@ chkpapikey = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 # Chkp API secret
 chkpapisecret = "xxxxxxxxxxxxxxxxxxxxxxxx"
 
-#SNOW API UserKey
-GetsnowUser = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-#SNOW API PWD
-GetsnowPasswd = "xxxxxxxxxx"
-
 #SNOW LOGIN User
 snowAdmin = "admin"
 #SNOW LOGIN PWD
