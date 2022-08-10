@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-
+#########################################################
+###    Script to close SNOW Incindents when the CSPM  ###
+###    alert is set to Acknowledged                   ###
+###    CB Currier < ccurrier@Checkpoint.com>          ###
+###    Version: 1.0    Date: 8/1/2022                 ###
+###    TAGS: CSPM CHKP DOME9 WORKAROUND CLOUDALLIANCE ###
+#########################################################
 from asyncio.windows_events import NULL
 from sre_constants import ANY
 from time import strftime
@@ -17,30 +23,23 @@ import json
 from requests.auth import HTTPBasicAuth
 
 # Chkp API key
-chkpapikey = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-
+chkpapikey = os.environ['CHKP_API_KEY']
 # Chkp API secret
-chkpapisecret = "zzzzzzzzzzzzzzzzzzzzzzzz"
-
-#SNOW API UserKey
-GetsnowUser = "00000000000000000000000000000000"
-#SNOW API PWD
-GetsnowPasswd = "@@@@@@@@@@"
-
+chkpapisecret = os.environ["CHKP_API_SEC"]
 #SNOW LOGIN User
-snowAdmin = "admin"
+snowAdmin = os.environ["SNOW_AUT_USER"]
 #SNOW LOGIN PWD
-snowAdmPwd = "************"
-
+snowAdmPwd = os.environ["SNOW_AUT_U_PWD"]
 #SNOW Instance
-GetsnowInstance = "xxxxxxxx"
+GetsnowInstance = os.environ["SNOWINST"]
 
 
 def chkpfindings(apiKey, apiSecret):
-  ###########################
-  ####    Get Findings    ###
-  ####   from CSPM Chkp   ###
-  ###########################
+  ##################################################
+  ###  Get Findings from the last month that are ###
+  ###  acknowledged from CHKP CSPM. Loop through ###
+  ###  results and return JSON dataset           ###
+  ##################################################
   searchurl = "https://api.dome9.com/v2/Compliance/Finding/search";
   headers = {
     "Accept": "application/json",
@@ -115,6 +114,11 @@ def resolveIncident(snowIncident, snowUser, snowPasswd):
   
 
 def fetchD9SNOWIncd(snowInstance, snowUser, snowPasswd, chkpId):   
+###################################################################
+### Fetch SNOW Incident from x_chpst_dome9_compliance_incident  ###
+### table based on chkpId parameter which is alert_id from CSPM ###
+### Return Incident JSON data.                                  ###
+###################################################################
     searchstr = urlencode({'sysparm_limit': 1})
     murl = "https://"+snowInstance+".service-now.com/api/now/table/x_chpst_dome9_compliance_incident?alert_id="+chkpId+"&"+searchstr
     headers = {
@@ -135,7 +139,13 @@ def fetchD9SNOWIncd(snowInstance, snowUser, snowPasswd, chkpId):
         exit()
     
 
-def fetchSNOWIncdAct(snowUser, snowPasswd, incdLink):   
+def fetchSNOWIncdAct(snowUser, snowPasswd, incdLink):
+#################################################
+###   Pull all Active SNOW Incidents from the ###
+###   x_chpst_dome9_compliance_incident table ###
+###   Print the Incident Link and forward to  ###
+###   resolveIncident function to close       ###
+#################################################
     headers = {
         "accept": "application/json",
         "Content-Type": "application/json",
