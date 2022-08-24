@@ -15,7 +15,7 @@ import requests
 import math
 from datetime import datetime, timedelta
 from dateutil.relativedelta import *
-import json
+import sys
 from requests.auth import HTTPBasicAuth
 
 # Chkp API key
@@ -83,10 +83,6 @@ def chkpfindings(apiKey, apiSecret):
   return myresults;
 
 def fetchD9SNOWIncd(snowInstance, snowUser, snowPasswd): 
-########################################################
-###   Fetch the all SNOW open incidents from the     ###
-###   x_chpst_dome9_compliance_incident table        ###
-########################################################
     myincid=[]
     searchstr = urlencode({'sysparm_limit': 1 })
     murl = "https://"+snowInstance+".service-now.com/api/now/table/x_chpst_dome9_compliance_incident?"+searchstr
@@ -114,11 +110,6 @@ def fetchD9SNOWIncd(snowInstance, snowUser, snowPasswd):
     
 
 def fetchSNOWIncdAct(snowIncident, snowInstance, snowUser, snowPasswd):
-#################################################################
-###  Fetch a specific SNOW Incident - by Alert ID then if the ###
-###  Incident is not have a state of 6 or 7 pass the incident ###
-###  URL to the resolveIncident function to be closed         ###
-#################################################################
     urlIncd = 'https://'+snowInstance+'.service-now.com/api/now/table/incident/'+snowIncident
     headers = {
         "accept": "application/json",
@@ -139,9 +130,9 @@ def fetchSNOWIncdAct(snowIncident, snowInstance, snowUser, snowPasswd):
 
 
 def resolveIncident(snowIncident, snowUser, snowPasswd):
-  ###################################################################
-  #### Take Incident URL and set the Incident Status to resolved #####
-  ###################################################################
+  ###############################################################
+  #### Take Incident URL & open it & set Status to resolved #####
+  ###############################################################
 
     headers = {
         "accept": "application/json",
@@ -160,7 +151,7 @@ def resolveIncident(snowIncident, snowUser, snowPasswd):
   
  
 try:
-
+ 
     SNOWincidLnk = fetchD9SNOWIncd( GetsnowInstance, snowAdmin, snowAdmPwd);
     SNOWalerts = []
     absent = []
