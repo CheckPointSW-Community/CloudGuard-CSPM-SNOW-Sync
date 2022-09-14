@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 #########################################################
 ###    Script to close Orphaned SNOW Incidents        ###
-###    CB Currier < ccurrier@Checkpoint.com>          ###
+###    CB Currier <ccurrier@Checkpoint.com>           ###
 ###    Version: 1.0    Date: 8/3/2022                 ###
+###    Updated: 9/14/22                               ###
 ###    TAGS: CSPM CHKP DOME9 WORKAROUND CLOUDALLIANCE ###
 #########################################################
 from asyncio.windows_events import NULL
@@ -84,7 +85,7 @@ def chkpfindings(apiKey, apiSecret):
 
 def fetchD9SNOWIncd(snowInstance, snowUser, snowPasswd): 
     myincid=[]
-    searchstr = urlencode({'sysparm_limit': 1 })
+    searchstr = urlencode({'sysparm_fields': 'incident,alert_id'})
     murl = "https://"+snowInstance+".service-now.com/api/now/table/x_chpst_dome9_compliance_incident?"+searchstr
     headers = {
         "accept": "application/json;charset=utf-8",
@@ -94,10 +95,10 @@ def fetchD9SNOWIncd(snowInstance, snowUser, snowPasswd):
     if len(resp.json()) != 0:
        for kincid, vincid in resp.json().items():
            if len(vincid) != 0:
-                for g in vincid:
+                 for g in vincid:
                     thisincid={
-                        "incident": g['incident']['value'],
-                        "alert_id": g['alert_id']
+                         "alert_id": g['alert_id']
+#                        "incident": g['incident']['value'],
                     }
                     myincid.append(thisincid)
     return(myincid);
@@ -110,7 +111,11 @@ def fetchD9SNOWIncd(snowInstance, snowUser, snowPasswd):
     
 
 def fetchSNOWIncdAct(snowIncident, snowInstance, snowUser, snowPasswd):
-    urlIncd = 'https://'+snowInstance+'.service-now.com/api/now/table/incident/'+snowIncident
+    #use SNOW sysparam_query to fetch only non 6& 7 records with the incident having correlation_id
+    # correlation_id is the AlertId from the CSPM
+    searchst = urlencode({'sysparm_query':'state!=6^state!=7','sysparm_fields':'sys_id','correlation_id': snowIncident})
+    urlIncd = 'https://'+snowInstance+'.service-now.com/api/now/table/incident?'+searchst
+    #correlation_id
     headers = {
         "accept": "application/json",
         "Content-Type": "application/json",
@@ -118,10 +123,11 @@ def fetchSNOWIncdAct(snowIncident, snowInstance, snowUser, snowPasswd):
     resp = requests.get(urlIncd, auth=(snowUser, snowPasswd), headers=headers)
     
     for kincid, vincid in resp.json().items():
-        if(vincid['state'] != "6" and vincid['state'] != "7"):
+        for incd in vincid:
+#        if(vincid['state'] != "6" and vincid['state'] != "7"):
                 ### then update active record to closed else skip
-                #myincid.append(vincid[0]['incident']['link'])
-                resolveIncident(urlIncd, snowUser, snowPasswd);
+                resincd = 'https://'+snowInstance+'.service-now.com/api/now/table/incident/'+incd['sys_id']
+                resolveIncident(resincd, snowUser, snowPasswd);
 # Check for HTTP codes other than 200
     if resp.status_code != 200: 
         print("ERROR:");
@@ -161,12 +167,7 @@ try:
     openfindings = chkpfindings(chkpapikey,chkpapisecret);
     absent = set(SNOWalerts).difference(set(openfindings));
 
-    for inx, alertID in enumerate(absent):
-        for incident, xalert in enumerate(SNOWincidLnk):
-            if alertID == xalert['alert_id']:
-                tbd.append(xalert['incident']);
-#    print(tbd)
-    for finding in tbd:
+    for xindx, finding in enumerate(absent):
         fetchSNOWIncdAct(finding, GetsnowInstance, snowAdmin, snowAdmPwd)
     exit()
 
