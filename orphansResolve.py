@@ -3,10 +3,12 @@
 ###    Script to close Orphaned SNOW Incidents        ###
 ###    CB Currier <ccurrier@Checkpoint.com>           ###
 ###    Version: 1.0    Date: 8/3/2022                 ###
-###    Updated: 9/14/22                               ###
+###    Updated: 11/07/22                              ###
 ###    TAGS: CSPM CHKP DOME9 WORKAROUND CLOUDALLIANCE ###
 #########################################################
 from asyncio.windows_events import NULL
+from doctest import debug_script
+from pickle import FALSE
 from sre_constants import ANY
 from time import strftime
 import os
@@ -29,6 +31,12 @@ snowAdmin = os.environ["SNOW_AUT_USER"]
 snowAdmPwd = os.environ["SNOW_AUT_U_PWD"]
 #SNOW Instance
 GetsnowInstance = os.environ["SNOWINST"]
+
+#Print Debugging Info
+debugIncd = True
+
+#Report Only
+reportOnly = False
 
 #Get RulesetID
 RulesetID="-11"
@@ -127,7 +135,11 @@ def fetchSNOWIncdAct(snowIncident, snowInstance, snowUser, snowPasswd):
 #        if(vincid['state'] != "6" and vincid['state'] != "7"):
                 ### then update active record to closed else skip
                 resincd = 'https://'+snowInstance+'.service-now.com/api/now/table/incident/'+incd['sys_id']
-                resolveIncident(resincd, snowUser, snowPasswd);
+                if(reportOnly == False) and (debugIncd == False):
+                    resolveIncident(resincd, snowUser, snowPasswd);
+                else:
+                    print(resincd);
+
 # Check for HTTP codes other than 200
     if resp.status_code != 200: 
         print("ERROR:");
@@ -148,7 +160,6 @@ def resolveIncident(snowIncident, snowUser, snowPasswd):
     nowtime=nowDatecalc.strftime("%Y-%m-%dT%H:%M:%S.%fZ");
     recdata='{"state":"6", "category":"application","closed_at": "'+nowtime+'","close_code":"Solved (Permanently)","subcategory":"Settings/Preferences","close_notes":"Automatically closed via integration as compliance incident was detected as resolved","caused_by":"Configured/Reconfigured","problem_id":"No"}'
     resp = requests.patch(snowIncident, auth=(snowUser, snowPasswd), headers=headers, data=recdata)
-    print(snowIncident);
     if resp.status_code != 200: 
         print("ERROR:");
         print('Status:', resp.status_code, 'Headers:', resp.headers, 'Error Response:',resp.json())
@@ -159,6 +170,16 @@ def resolveIncident(snowIncident, snowUser, snowPasswd):
 try:
  
     SNOWincidLnk = fetchD9SNOWIncd( GetsnowInstance, snowAdmin, snowAdmPwd);
+    if(debugIncd == True):
+        print("#############################")
+        print("####      DEBUG          ####")
+        print("####    D9 Incidents     ####")
+        print("#############################")
+        print("")
+        print(SNOWincidLnk)
+        print("#############################")
+
+        
     SNOWalerts = []
     absent = []
     tbd = []
@@ -166,6 +187,21 @@ try:
         SNOWalerts.append(SNAlert['alert_id'])
     openfindings = chkpfindings(chkpapikey,chkpapisecret);
     absent = set(SNOWalerts).difference(set(openfindings));
+    if(debugIncd == True):
+        print("#############################")
+        print("####      DEBUG          ####")
+        print("####   SNOW Missing INCD ####")
+        print("#############################")
+        print("")
+        print(absent)
+        print("#############################")
+        print("")
+        print("#############################")
+        print("####      DEBUG          ####")
+        print("####   Open Missing INCD ####")
+        print("#############################")
+        print("")
+        
 
     for xindx, finding in enumerate(absent):
         fetchSNOWIncdAct(finding, GetsnowInstance, snowAdmin, snowAdmPwd)
